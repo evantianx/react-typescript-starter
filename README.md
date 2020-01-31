@@ -34,6 +34,18 @@ const App = ({ title }: AppProps) => (
 );
 ```
 
+Note: If you are going to use defaultProps with FC and wanna type it, you might need to avoid `React.FC`:
+
+```ts
+type TitleProps = typeof defaultProps & { name: string };
+
+const defaultProps = { text: 'Hello world!' };
+
+const Title = (props: TitleProps) => <h1>{props.text}</h1>;
+
+Title.defaultProps = defaultProps;
+```
+
 ### Hooks
 
 > [React Hooks in TypeScript](https://medium.com/@jrwebdev/react-hooks-in-typescript-88fce7001d0d)
@@ -65,6 +77,12 @@ const formatData = (data: typeof data) => { ... }
 const formatPartialData = (partialData: Partial<typeof data>) => {}
 formatPartialData({ bar: 2 }) // works!
 ```
+
+#### `useEffect`
+
+> You don’t need to provide any extra typings. TypeScript will check that the method signature of the function you provide is correct. This function also has a return value (for cleanups). And TypeScript will check that you provide a correct function as well
+
+> When using useEffect, take care not to return anything other than a function or undefined
 
 #### `useRef`
 
@@ -180,6 +198,12 @@ function App() {
 render(<App />, document.getElementById('root'));
 ```
 
+#### `useMemo / useCallback`
+
+Again, you don't need to do anything else.
+
+> Note: you must make sure you specify the types of the parameters of the callback for useCallback, otherwise they will be set to any, regardless of whether you have TypeScript’s noImplicitAny set to true.
+
 #### Custom Hooks
 
 Mention: If you return an array in your custom hook, you need use `as` to declare the array as `const`:
@@ -194,3 +218,60 @@ export function useLoading() {
   return [isLoading, load] as const; // infers [boolean, typeof load] instead of (boolean | typeof load)[]
 }
 ```
+
+### Class Components
+
+```ts
+// remember therr is no need to declare props or state as a readonly like:
+// type TitleProps = { readonly title: string }
+// because React.Component has already mark them as immutable
+const initialState = { count: 1 };
+type TitleState = typeof initialState;
+type TitleProps = { title: string };
+
+class Title extends React.Component<TitleProps, TitleState> {
+  state: TitleState = initialState;
+
+  render() {
+    return (
+      <div className='title'>
+        <h1>{this.props.title}</h1>
+        {this.state.count}
+      </div>
+    );
+  }
+}
+```
+
+For class methods, just delcare it with typed arguements;
+For class properties, delcare it like state without assignment:
+
+```ts
+class App extends React.Component<{
+  message: string;
+}> {
+  pointer: number; // like this
+  handleSubmit = (value: number) {  // like this
+    // ...
+  }
+  // ...
+}
+```
+
+To type defaultProps:
+
+```ts
+type TitleProps = typeof Title.defaultProps & { name: string };
+
+class Title extends React.Component<TitleProps> {
+  static defaultProps = {
+    count: 1,
+  };
+
+  render() {
+    return <h1>{this.props.count}</h1>;
+  }
+}
+```
+
+> 🚨 This will ruin the autocomplete for props.
